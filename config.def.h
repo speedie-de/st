@@ -2,23 +2,22 @@
  * https://github.com/speedie-de/st
  * Works best with szsh as your shell and my dmenu config.
  *
+ * - If you want 'copyout' support, add a keybind to run /usr/bin/copyout to your build of dwm.
+ * - If you want an emoji picker, add a keybind to run /usr/bin/emojilist to your build of dwm.
+ * - If you're using my build then the above is already done so you don't need to worry about it.
+ * - This build of st does NOT prevent colored emojis. If you do not have patched libXft then it will crash.
+ * - You can install libXft-bgra by running "make gentoo-libxftfix", "make arch-libxftfix" or "make libxftfix"
+ *
  * If you have any questions, read the 'man' page.
- */ 
-
-static char *font = "Terminus:style=Mono:pixelsize=15.5:antialias=true:autohint=true";
-static char *font2[] = { "Noto Emoji:pixelsize=12:antialias=true:autohint=true",
-};
+ * 
+ * As for fonts, I recommend using these:
+ * JoyPixels for Emojis
+ * Terminus for text
+ */
+static char *font = "JoyPixels:pixelsize=12";
+static char *font2[] = { "Terminus:style=Mono:pixelsize=15.5:antialias=true:autohint=true" };
 
 static int borderpx = 2;
-
-/*
- * What program is execed by st depends of these precedence rules:
- * 1: program passed with -e
- * 2: scroll and/or utmp
- * 3: SHELL environment variable
- * 4: value of shell in /etc/passwd
- * 5: value of shell in config.h
- */
 static char *shell = "/bin/sh";
 char *utmp = NULL;
 /* scroll program: to enable use a string like "scroll" */
@@ -31,6 +30,9 @@ char *vtiden = "\033[?6c";
 /* Kerning / character bounding-box multipliers */
 static float cwscale = 1.0;
 static float chscale = 1.0;
+/* Character rendering offsets in pixels */
+static short cxoffset = 0;
+static short cyoffset = 0;
 
 /*
  * word delimiter string
@@ -114,34 +116,33 @@ float alpha = 0.70;
 /* Terminal colors (16 first used in escape sequence) */
 static const char *colorname[] = {
 	/* 8 normal colors */
-	"#5c5c5c", // black
-	"#e57373", // red3
-	"#02982e", // green3
-	"#fac863", // yellow3
-	"#6699cc", // blue2
-	"#a36ac7", // magenta3
-	"#5fb3b3", // cyan3
-	"#c0c5ce", // gray90
+	"#5c5c5c", /* black */
+	"#e57373", /* red3 */
+	"#02982e", /* green3 */
+	"#fac863", /* yellow3 */
+	"#6699cc", /* blue2 */
+	"#a36ac7", /* magenta3 */
+	"#5fb3b3", /* cyan3 */
+	"#c0c5ce", /* gray90 */
 
 	/* 8 bright colors */
-	"#00ffaa", // gray50
-	"#e57373", // red
-	"#a6bc69", // green
-	"#fac863", // yellow
-	"#6699cc", // #5c5cff
-    "#c594c5", // magenta
-	"#5fb3b3", // cyan
-	"#ffffff", // white
+	"#00ffaa", /* gray50 */
+	"#e57373", /* red */
+	"#a6bc69", /* green */
+	"#fac863", /* yellow */
+	"#6699cc", /* #5c5cff */
+    "#c594c5", /* magenta */
+	"#5fb3b3", /* cyan */
+	"#ffffff", /* white */
 
 	[255] = 0,
 
 	/* more colors can be added after 255 to use with DefaultXX */
 	"#cccccc",
 	"#555555",
-	"#c0c5ce", // default foreground colour (#c0c5ce)
-	"#1c1c1c", // default background colour (#212121)
+	"#c0c5ce", /* default foreground colour (#c0c5ce) */
+	"#1c1c1c", /* default background colour (#212121) */
 };
-
 
 /*
  * Default colors (colorname index)
@@ -228,7 +229,7 @@ static MouseShortcut mshortcuts[] = {
 	/* mask                 button   function        argument       release */
 	{ XK_NO_MOD,            Button4, kscrollup,      {.i = 1} },
 	{ XK_NO_MOD,            Button5, kscrolldown,    {.i = 1} },
-	{ XK_ANY_MOD,           Button2, selpaste,       {.i = 0},      1 },
+	{ XK_ANY_MOD,           Button2, clippaste,       {.i = 0},      1 },
 	{ ShiftMask,            Button4, ttysend,        {.s = "\033[5;2~"} },
 	{ XK_ANY_MOD,           Button4, ttysend,        {.s = "\031"} },
 	{ ShiftMask,            Button5, ttysend,        {.s = "\033[6;2~"} },
@@ -249,10 +250,10 @@ static Shortcut shortcuts[] = {
 	{ TERMMOD,              XK_equal,       zoom,           {.f = +1} }, // XK_equal (+ zoom)
 	{ TERMMOD,              XK_minus,       zoom,           {.f = -1} }, // XK_minus (- zoom)
 	{ TERMMOD,              XK_0,           zoomreset,      {.f = 0} }, // XK_0 (reset zoom)
-	{ ControlMask,          XK_c,           clipcopy,       {.i = 0} }, // XK_C (copy)
-	{ ControlMask,          XK_v,           selpaste,       {.i = 0} }, // XK_V (paste)
-	{ TERMMOD,              XK_y,           selpaste,       {.i = 0} },
-	{ ShiftMask,            XK_Insert,      selpaste,       {.i = 0} },
+	{ ControlMask,          XK_y,           clipcopy,       {.i = 0} }, // XK_C (copy)
+	{ ControlMask,          XK_p,           clippaste,       {.i = 0} }, // XK_V (paste)
+	{ TERMMOD,              XK_y,           clippaste,       {.i = 0} },
+	{ ShiftMask,            XK_Insert,      clippaste,       {.i = 0} },
 	{ TERMMOD,              XK_Num_Lock,    numlock,        {.i = 0} },
 	{ ControlMask,          XK_k,           kscrollup,      {.i = -1} },
 	{ ControlMask,          XK_j,           kscrolldown,    {.i = -1} },

@@ -991,7 +991,6 @@ xloadfont(Font *f, FcPattern *pattern)
 	    XftResultMatch)) {
 		if ((XftPatternGetInteger(f->match->pattern, "weight", 0,
 		    &haveattr) != XftResultMatch) || haveattr != wantattr) {
-			f->badweight = 1;
 			fputs("font weight does not match\n", stderr);
 		}
 	}
@@ -1436,8 +1435,8 @@ xmakeglyphfontspecs(XftGlyphFontSpec *specs, const Glyph *glyphs, int len, int x
 		if (glyphidx) {
 			specs[numspecs].font = font->match;
 			specs[numspecs].glyph = glyphidx;
-			specs[numspecs].x = (short)xp;
-			specs[numspecs].y = (short)yp;
+			specs[numspecs].x = (short)xp + cxoffset;
+			specs[numspecs].y = (short)yp + cyoffset;
 			xp += runewidth;
 			numspecs++;
 			continue;
@@ -1644,12 +1643,8 @@ xdrawglyphfontspecs(const XftGlyphFontSpec *specs, Glyph base, int len, int x, i
 		drawboxes(winx, winy, width / len, win.ch, fg, bg, specs, len);
 	} else {
 		/* Render the glyphs. */
-	    FcBool b = FcFalse;
-		FcPatternGetBool(specs->font->pattern, FC_COLOR, 0, &b);
-		if (!b) {
-		    XftDrawGlyphFontSpec(xw.draw, fg, specs, len);
+			XftDrawGlyphFontSpec(xw.draw, fg, specs, len);
 			}
-	}
 
 	/* Render underline and strikethrough. */
 	if (base.mode & ATTR_UNDERLINE) {

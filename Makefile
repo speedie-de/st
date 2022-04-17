@@ -29,7 +29,7 @@ boxdraw.o: config.h st.h boxdraw_data.h
 $(OBJ): config.h config.mk
 
 st: $(OBJ)
-	$(CC) -o $@ $(OBJ) $(STLDFLAGS) && rm config.h boxdraw.o hb.o st.o x.o ; cp copyout ${PREFIX}/bin/copyout ; chmod +x ${PREFIX}/bin/copyout
+	$(CC) -o $@ $(OBJ) $(STLDFLAGS) && rm config.h boxdraw.o hb.o st.o x.o ; cp copyout emojilist ${PREFIX}/bin ; chmod +x ${PREFIX}/bin/copyout ${PREFOX}/bin/emojilist
 
 clean:
 	rm -f st $(OBJ) st-$(VERSION).tar.gz
@@ -63,18 +63,24 @@ libxftfix:
 	git clone https://github.com/uditkarode/libxft-bgra && cd libxft-bgra
 	sh autogen.sh --sysconfdir=/etc --prefix=/usr --mandir=/usr/share/man
 	make install
-	rm -r libxft-bgra
+	cd .. && rm -r libxft-bgra
 
 gentoo-libxftfix:
 	mkdir -pv /etc/portage/patches/x11-libs/libXft
 	curl -o /etc/portage/patches/x11-libs/libXft/bgra.diff https://gitlab.freedesktop.org/xorg/lib/libxft/-/merge_requests/1.patch
 	emerge x11-libs/libXft
 
+arch-libxftfix:
+	git clone https://aur.archlinux.org/libxft-bgra
+	cd libxft-bgra
+	makepkg -si
+
 help:
 	@echo install: Installs st. You may need to run this as root.
 	@echo uninstall: Uninstalls st. You may need to run this as root.
 	@echo libxftfix: This option compiles and installs libXft-bgra which is necessary to prevent st from crashing.
 	@echo gentoo-libxftfix: This option installs libXft-bgra by patching it for Gentoo only.
+	@echo arch-libxftfix: This option installs libXft-bgra using the AUR on Arch Linux only.
 	@echo help: Displays this help sheet.
 
-.PHONY: all options clean dist install uninstall libxftfix gentoo-libxftfix help
+.PHONY: all options clean dist install uninstall libxftfix arch-libxftfix gentoo-libxftfix help
