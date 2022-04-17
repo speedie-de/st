@@ -17,3 +17,7 @@ If you're using my zsh config (szsh):
 I           | Enter Insert mode
 Esc         | Enter Normal mode
 Tab         | Autocomplete
+
+If you're using my build of dwm:
+Alt+Shift+e | Open emoji picker
+Alt+Shift+c | Open copyout selection
