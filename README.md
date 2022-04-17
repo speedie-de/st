@@ -15,14 +15,14 @@ It features many different patches and tweaks to enhance the experience.
 - git clone <this-url>
 - cd st
 - sudo make install
+- Follow "Installing libXft-bgra"
 
 ### Installing libXft-bgra
 Thankfully, I made this process a bit easier by building it into the Makefile.
 - cd st
 - make libxftfix # For all distros except Gentoo
 - make gentoo-libxftfix # For Gentoo
-
-If you're on Arch Linux you can also install libXft-bgra from the AUR yourself.
+- make arch-libxftfix # For Arch
 
 ### Features
 This build of dwm has been patched pretty heavily with the following patches
@@ -41,3 +41,56 @@ This build of dwm has been patched pretty heavily with the following patches
 - st-newterm
 - st-scrollback
 - st-scrollback-mouse
+- st-nobadweight
+- st-charoffsets
+  
+This build of st has full compatibility with .Xresources and allows defining these options:
+- st.foreground
+- st.background
+- st.cursorColor
+- st.color0
+- st.color8
+- st.color1
+- st.color9
+- st.color2
+- st.color10
+- st.color3
+- st.color11
+- st.color4
+- st.color12
+- st.color5
+- st.color13
+- st.color6
+- st.color14
+- st.color7
+- st.color15
+- st.alpha
+- st.font
+
+Pywal support is also a thing and will automatically be used. No special scripts like my builds of dwm and dmenu require.
+
+It also supports color emojis as long as libXft is patched, otherwise it will CRASH. It has an emoji picker. To use it, add a keybind to your build of dwm which runs /usr/bin/emojilist (Requires dmenu). It allows copying the output of a command. To use it, add a keybind to your build of dwm which runs /usr/bin/copyout (Requires dmenu) Keep in mind if you're using my build of dwm, these binds are already added.
+
+### Keybinds
+Here's a fairly incomplete list of keybinds for my build of st
+- CTRL+y      | Copy (yank) to the clipboard
+- CTRL+p      | Paste from the clipboard
+- CTRL+=      | Increase font size
+- CTRL+-      | Decrease font size
+- CTRL+0      | Reset font size to default
+- CTRL+j      | Scroll down
+- CTRL+k      | Scroll up
+- CTRL+Enter  | Opens a new terminal window in the same directory
+- Scroll+up   | Scroll up (Mouse scrollback support)
+- Scroll+down | Scroll down (Mouse scrollback support)
+
+If you're using my zsh config (szsh):
+- i           | Enter Insert mode
+- Esc         | Enter Normal mode
+- Tab         | Autocomplete
+
+If you're using my build of dwm:
+- Alt+Shift+e | Open emoji picker
+- Alt+Shift+c | Open copyout selection
+  
+Most of these are Vim keybinds.
