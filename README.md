@@ -17,6 +17,12 @@ It features many different patches and tweaks to enhance the experience.
 - sudo make install
 - Follow "Installing libXft-bgra"
 
+### Installation (Package manager)
+If you're running Gentoo Linux, you can add my overlay and then simply emerge it.
+- emerge layman
+- layman -o https://raw.githubusercontent.com/spoverlay/splay/main/splay.xml -f -a splay
+- emerge st-spde
+  
 ### Installing libXft-bgra
 Thankfully, I made this process a bit easier by building it into the Makefile.
 - cd st
@@ -29,68 +35,86 @@ This build of dwm has been patched pretty heavily with the following patches
 - st-alpha
 - st-anysize
 - st-autocomplete
-- st-blinking_cursor
 - st-bold-is-not-bright
 - st-boxdraw
+- st-charoffsets
 - st-clipboard
 - st-delkey
 - st-externalpipe
 - st-font2
 - st-fontfix
-- st-ligatures
+- st-glyph-wide-support-boxdraw
+- st-ligatures-alpha-scrollback
 - st-newterm
+- st-nobadweight
 - st-scrollback
 - st-scrollback-mouse
-- st-nobadweight
-- st-charoffsets
+- st-spoiler
+- st-w3m
+- st-xclearwin
+- st-xresources
+- st-keyboard-select
+- st-undercurl
+- st-csi
+- st-copyurl
+- st-dynamic-cursor-color
   
 This build of st has full compatibility with .Xresources and allows defining these options:
-- st.foreground
-- st.background
-- st.cursorColor
-- st.color0
-- st.color8
-- st.color1
-- st.color9
-- st.color2
-- st.color10
-- st.color3
-- st.color11
-- st.color4
-- st.color12
-- st.color5
-- st.color13
-- st.color6
-- st.color14
-- st.color7
-- st.color15
-- st.alpha
-- st.font
+- !! st resources
+- ! special
+- *.foreground:             #e7e7e7
+- *.background:             #202020
+- *.cursorColor:            #e7e7e7
+- ! black
+- *.color0:                 #262626
+- *.color8:                 #737373
+- ! red
+- *.color1:                 #ff3534
+- *.color9:                 #ff4f4c
+- ! green
+- *.color2:                 #35b723
+- *.color10:                #82ff6e
+- ! yellow
+- *.color3:                 #eae804
+- *.color11:                #dfff52
+- ! blue
+- *.color4:                 #362be4
+- *.color12:                #5767ff
+- ! magenta
+- *.color5:                 #fa9cf8
+- *.color13:                #cf89cf
+- ! cyan
+- *.color6:                 #4ed4d4
+- *.color14:                #68efef
+- ! white
+- *.color7:                 #bebebe
+- *.color15:                #f7f5f5
+- ! alpha
+- *.alpha:                  0.7
+- ! font
+- *.font:                   Terminus:pixelsize=15.5:antialias=true:autohint=true;
+- *.font2:                  JoyPixels:pixelsize=12
 
 Pywal support is also a thing and will automatically be used. No special scripts like my builds of dwm and dmenu require.
 
 It also supports color emojis as long as libXft is patched, otherwise it will CRASH. It has an emoji picker. To use it, add a keybind to your build of dwm which runs /usr/bin/emojilist (Requires dmenu). It allows copying the output of a command. To use it, add a keybind to your build of dwm which runs /usr/bin/copyout (Requires dmenu) Keep in mind if you're using my build of dwm, these binds are already added.
 
 ### Keybinds
-Here's a fairly incomplete list of keybinds for my build of st
-- CTRL+y      | Copy (yank) to the clipboard
+- CTRL+y      | Copy to the clipboard
 - CTRL+p      | Paste from the clipboard
 - CTRL+=      | Increase font size
 - CTRL+-      | Decrease font size
 - CTRL+0      | Reset font size to default
 - CTRL+j      | Scroll down
 - CTRL+k      | Scroll up
+- CTRL+Shift+k| Copy the last URL
 - CTRL+Enter  | Opens a new terminal window in the same directory
 - Scroll+up   | Scroll up (Mouse scrollback support)
 - Scroll+down | Scroll down (Mouse scrollback support)
-
-If you're using my zsh config (szsh):
-- i           | Enter Insert mode
+- Shift+Esc   | Select mode
+- 
+- If you're using my zsh config:
+- I           | Enter Insert mode
 - Esc         | Enter Normal mode
 - Tab         | Autocomplete
 
-If you're using my build of dwm:
-- Alt+Shift+e | Open emoji picker
-- Alt+Shift+c | Open copyout selection
-  
-Most of these are Vim keybinds.
