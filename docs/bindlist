@@ -1,0 +1,17 @@
+CTRL+y      | Copy to the clipboard
+CTRL+p      | Paste from the clipboard
+CTRL+=      | Increase font size
+CTRL+-      | Decrease font size
+CTRL+0      | Reset font size to default
+CTRL+j      | Scroll down
+CTRL+k      | Scroll up
+CTRL+Shift+k| Copy the last URL
+CTRL+Enter  | Opens a new terminal window in the same directory
+Scroll+up   | Scroll up (Mouse scrollback support)
+Scroll+down | Scroll down (Mouse scrollback support)
+Shift+Esc   | Select mode
+
+If you're using my zsh config:
+I           | Enter Insert mode
+Esc         | Enter Normal mode
+Tab         | Autocomplete
