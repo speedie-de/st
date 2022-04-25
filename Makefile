@@ -29,22 +29,28 @@ boxdraw.o: config.h st.h boxdraw_data.h
 $(OBJ): config.h config.mk
 
 st: $(OBJ)
-	$(CC) -o $@ $(OBJ) $(STLDFLAGS) && rm config.h boxdraw.o hb.o st.o x.o ; cp copyout emojilist ${PREFIX}/bin ; chmod +x ${PREFIX}/bin/copyout ${PREFOX}/bin/emojilist
+	$(CC) -o $@ $(OBJ) $(STLDFLAGS)
 
 clean:
-	rm -f st $(OBJ) st-$(VERSION).tar.gz
+	rm -f st $(OBJ) st-spde-$(VERSION).tar.gz
 
 dist: clean
-	mkdir -p st-$(VERSION)
-	cp -R FAQ LEGACY TODO LICENSE Makefile README config.mk\
-		config.def.h st.info st.1 arg.h st.h win.h $(SRC)\
-		st-$(VERSION)
-	tar -cf - st-$(VERSION) | gzip > st-$(VERSION).tar.gz
-	rm -rf st-$(VERSION) && rm config.h
+	mkdir -p st-spde-$(VERSION)
+	cp -R arg.h autocomplete.h boxdraw.c boxdraw_data.h config.def.h config.mk copyout docs emojilist hb.c hb.h Makefile st.1 st-autocomplete st.c st.h st.info win.h x.c st-keybinds st-spde-$(VERSION)
+	tar -cf - st-spde-$(VERSION) | gzip > st-spde-$(VERSION).tar.gz
+	rm -rf st-spde-$(VERSION)
 
 install: st
+	touch config.h boxdraw.o hb.o st.o x.o
 	mkdir -p $(DESTDIR)$(PREFIX)/bin
 	cp -f st $(DESTDIR)$(PREFIX)/bin
+	cp -f copyout $(DESTDIR)$(PREFIX)/bin
+	cp -f emojilist $(DESTDIR)$(PREFIX)/bin
+	cp -f docs/bindlist $(DESTDIR)$(PREFIX)/bin/stbindlist
+	cp -f st-keybinds $(DESTDIR)$(PREFIX)/bin
+	chmod +x $(DESTDIR)$(PREFIX)/bin/st-keybinds
+	chmod +x $(DESTDIR)$(PREFIX)/bin/emojilist
+	chmod +x $(DESTDIR)$(PREFIX)/bin/copyout
 	chmod 755 $(DESTDIR)$(PREFIX)/bin/st
 	cp -f st-autocomplete $(DESTDIR)$(PREFIX)/bin
 	chmod 755 $(DESTDIR)$(PREFIX)/bin/st-autocomplete

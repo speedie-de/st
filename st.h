@@ -37,6 +37,13 @@ enum glyph_attribute {
     ATTR_LIGA       = 1 << 11,
 	ATTR_BOXDRAW    = 1 << 11,
 	ATTR_BOLD_FAINT = ATTR_BOLD | ATTR_FAINT,
+	ATTR_DIRTYUNDERLINE = 1 << 15,
+};
+
+enum drawing_mode {
+    DRAW_NONE = 0,
+    DRAW_BG = 1 << 0,
+    DRAW_FG = 1 << 1,
 };
 
 enum selection_mode {
@@ -68,6 +75,8 @@ typedef struct {
 	ushort mode;      /* attribute flags */
 	uint32_t fg;      /* foreground  */
 	uint32_t bg;      /* background  */
+	int ustyle;	  /* underline style */
+	int ucolor[3];    /* underline color */
 } Glyph;
 
 typedef Glyph *Line;
@@ -94,8 +103,10 @@ void printscreen(const Arg *);
 void printsel(const Arg *);
 void sendbreak(const Arg *);
 void toggleprinter(const Arg *);
+void copyurl(const Arg *);
 
 int tattrset(int);
+int trt_kbdselect(KeySym, char *, int);
 void tnew(int, int);
 void tresize(int, int);
 void tsetdirtattr(int);

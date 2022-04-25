@@ -5,19 +5,30 @@
  * - If you want 'copyout' support, add a keybind to run /usr/bin/copyout to your build of dwm.
  * - If you want an emoji picker, add a keybind to run /usr/bin/emojilist to your build of dwm.
  * - If you're using my build then the above is already done so you don't need to worry about it.
- * - This build of st does NOT prevent colored emojis. If you do not have patched libXft then it will crash.
- * - You can install libXft-bgra by running "make gentoo-libxftfix", "make arch-libxftfix" or "make libxftfix"
+ *
+ * WARNING: This build of st does NOT prevent colored emojis from displaying.
+ * If you view colored emojis and don't have patched libXft then it will crash.
+ * To install libXft-bgra (the patched libXft), run one of these commands
+ * - make libxftfix (For all distributions except Gentoo and Arch)
+ * - make gentoo-libxftfix (For all Gentoo based distributions)
+ * - make arch-libxftfix (For all Arch based distributions)
  *
  * If you have any questions, read the 'man' page.
- * 
- * As for fonts, I recommend using these:
- * JoyPixels for Emojis
- * Terminus for text
- */
-static char *font = "JoyPixels:pixelsize=12";
+ *
+ * As for fonts, I recommend using Terminus for text and JoyPixels for Emojis
+ * You can set all of these in your .Xresources or if you don't have one, by editing the values below. */
+static char *font = "JoyPixels:pixelsize=12:antialias=true:autohint=true";
 static char *font2[] = { "Terminus:style=Mono:pixelsize=15.5:antialias=true:autohint=true" };
-
 static int borderpx = 2;
+
+/*
+ * What program is execed by st depends of these precedence rules:
+ * 1: program passed with -e
+ * 2: scroll and/or utmp
+ * 3: SHELL environment variable
+ * 4: value of shell in /etc/passwd
+ * 5: value of shell in config.h
+ */
 static char *shell = "/bin/sh";
 char *utmp = NULL;
 /* scroll program: to enable use a string like "scroll" */
@@ -134,10 +145,7 @@ static const char *colorname[] = {
     "#c594c5", /* magenta */
 	"#5fb3b3", /* cyan */
 	"#ffffff", /* white */
-
 	[255] = 0,
-
-	/* more colors can be added after 255 to use with DefaultXX */
 	"#cccccc",
 	"#555555",
 	"#c0c5ce", /* default foreground colour (#c0c5ce) */
@@ -154,13 +162,14 @@ static unsigned int defaultcs = 256;
 static unsigned int defaultrcs = 257;
 
 static unsigned int cursorstyle = 1;
-static Rune stcursor = 0x2603; /* snowman ("☃") */
+static Rune stcursor = 0x2603;
 
 /*
  * Xresources preferences to load at startup
  */
 ResourcePref resources[] = {
 		{ "font",         STRING,  &font },
+		{ "font2",        STRING,  &font2 },
 		{ "color0",       STRING,  &colorname[0] },
 		{ "color1",       STRING,  &colorname[1] },
 		{ "color2",       STRING,  &colorname[2] },
@@ -190,6 +199,7 @@ ResourcePref resources[] = {
 		{ "borderpx",     INTEGER, &borderpx },
 		{ "cwscale",      FLOAT,   &cwscale },
 		{ "chscale",      FLOAT,   &chscale },
+        { "alpha",        FLOAT,   &alpha },
 };
 
 /*
@@ -219,7 +229,7 @@ static unsigned int defaultattr = 11;
  */
 static uint forcemousemod = ShiftMask;
 
-# include "autocomplete.h"
+#include "autocomplete.h"
 
 /*
  * Internal mouse shortcuts.
@@ -229,42 +239,43 @@ static MouseShortcut mshortcuts[] = {
 	/* mask                 button   function        argument       release */
 	{ XK_NO_MOD,            Button4, kscrollup,      {.i = 1} },
 	{ XK_NO_MOD,            Button5, kscrolldown,    {.i = 1} },
-	{ XK_ANY_MOD,           Button2, clippaste,       {.i = 0},      1 },
+	{ XK_ANY_MOD,           Button2, selpaste,       {.i = 0},      1 },
 	{ ShiftMask,            Button4, ttysend,        {.s = "\033[5;2~"} },
 	{ XK_ANY_MOD,           Button4, ttysend,        {.s = "\031"} },
 	{ ShiftMask,            Button5, ttysend,        {.s = "\033[6;2~"} },
 	{ XK_ANY_MOD,           Button5, ttysend,        {.s = "\005"} },
 };
 
-/* Internal keyboard shortcuts. */
 #define MODKEY (ControlMask)
-#define TERMMOD (ControlMask) // |ShiftMask
+#define TERMMOD (ShiftMask) // |ShiftMask
 
 static Shortcut shortcuts[] = {
-	/* mask                 keysym          function        argument */
-	{ XK_ANY_MOD,           XK_Break,       sendbreak,      {.i = 0} },
-	{ ControlMask,          XK_Print,       toggleprinter,  {.i = 0} },
-	{ ShiftMask,            XK_Print,       printscreen,    {.i = 0} },
-	{ XK_ANY_MOD,           XK_Print,       printsel,       {.i = 0} },
-	{ TERMMOD,              XK_Return,      newterm,        {.i = 0} },
-	{ TERMMOD,              XK_equal,       zoom,           {.f = +1} }, // XK_equal (+ zoom)
-	{ TERMMOD,              XK_minus,       zoom,           {.f = -1} }, // XK_minus (- zoom)
-	{ TERMMOD,              XK_0,           zoomreset,      {.f = 0} }, // XK_0 (reset zoom)
-	{ ControlMask,          XK_y,           clipcopy,       {.i = 0} }, // XK_C (copy)
-	{ ControlMask,          XK_p,           clippaste,       {.i = 0} }, // XK_V (paste)
-	{ TERMMOD,              XK_y,           clippaste,       {.i = 0} },
-	{ ShiftMask,            XK_Insert,      clippaste,       {.i = 0} },
-	{ TERMMOD,              XK_Num_Lock,    numlock,        {.i = 0} },
-	{ ControlMask,          XK_k,           kscrollup,      {.i = -1} },
-	{ ControlMask,          XK_j,           kscrolldown,    {.i = -1} },
-	{ ShiftMask,            XK_Tab,         autocomplete,   {.i = ACMPL_WORD        } },
-	{ ShiftMask,            XK_period,      autocomplete,   {.i = ACMPL_FUZZY_WORD  } },
-	{ ShiftMask,            XK_comma,       autocomplete,   {.i = ACMPL_FUZZY       } },
-	{ ShiftMask,            XK_apostrophe,  autocomplete,   {.i = ACMPL_SUFFIX      } },
-	{ ShiftMask,            XK_semicolon,   autocomplete,   {.i = ACMPL_SURROUND    } },
-	{ ShiftMask,            XK_bracketright,autocomplete,   {.i = ACMPL_WWORD       } },
-	{ ShiftMask,            XK_bracketleft, autocomplete,   {.i = ACMPL_FUZZY_WWORD } },
-	{ ShiftMask,            XK_equal,       autocomplete,   {.i = ACMPL_UNDO        } },
+	/* mask                  keysym          function        argument */
+	{ XK_ANY_MOD,            XK_Break,       sendbreak,      {.i = 0} },
+	{ ControlMask,           XK_Print,       toggleprinter,  {.i = 0} },
+	{ ShiftMask,             XK_Print,       printscreen,    {.i = 0} },
+	{ XK_ANY_MOD,            XK_Print,       printsel,       {.i = 0} },
+	{ ControlMask|ShiftMask, XK_Return,      newterm,        {.i = 0} },
+	{ ControlMask,           XK_equal,       zoom,           {.f = +1} },
+	{ ControlMask,           XK_minus,       zoom,           {.f = -1} },
+	{ ControlMask,           XK_0,           zoomreset,      {.f = 0} },
+	{ ControlMask,           XK_y,           clipcopy,       {.i = 0} },
+	{ ControlMask,           XK_p,           clippaste,      {.i = 0} },
+	{ TERMMOD,               XK_Escape,      keyboard_select,{.i = 0} },
+	{ TERMMOD,               XK_y,           selpaste,       {.i = 0} },
+	{ ShiftMask,             XK_Insert,      selpaste,       {.i = 0} },
+	{ TERMMOD,               XK_Num_Lock,    numlock,        {.i = 0} },
+	{ ControlMask|ShiftMask, XK_k,           copyurl,        {.i = 0} },
+	{ ControlMask,           XK_k,           kscrollup,      {.i = +1} },
+	{ ControlMask,           XK_j,           kscrolldown,    {.i = +1} },
+	{ ShiftMask,             XK_Tab,         autocomplete,   {.i = ACMPL_WORD        } },
+	{ ShiftMask,             XK_period,      autocomplete,   {.i = ACMPL_FUZZY_WORD  } },
+	{ ShiftMask,             XK_comma,       autocomplete,   {.i = ACMPL_FUZZY       } },
+	{ ShiftMask,             XK_apostrophe,  autocomplete,   {.i = ACMPL_SUFFIX      } },
+	{ ShiftMask,             XK_semicolon,   autocomplete,   {.i = ACMPL_SURROUND    } },
+	{ ShiftMask,             XK_bracketright,autocomplete,   {.i = ACMPL_WWORD       } },
+	{ ShiftMask,             XK_bracketleft, autocomplete,   {.i = ACMPL_FUZZY_WWORD } },
+	{ ShiftMask,             XK_equal,       autocomplete,   {.i = ACMPL_UNDO        } },
 };
 
 /*
@@ -536,3 +547,27 @@ static char ascii_printable[] =
 	" !\"#$%&'()*+,-./0123456789:;<=>?"
 	"@ABCDEFGHIJKLMNOPQRSTUVWXYZ[\\]^_"
 	"`abcdefghijklmnopqrstuvwxyz{|}~";
+
+/**
+ * Undercurl style. Set UNDERCURL_STYLE to one of the available styles.
+ *
+ * Curly: Dunno how to draw it *shrug*
+ *  _   _   _   _
+ * ( ) ( ) ( ) ( )
+ *	 (_) (_) (_) (_)
+ *
+ * Spiky:
+ * /\  /\   /\	/\
+ *   \/  \/	  \/
+ *
+ * Capped:
+ *	_     _     _
+ * / \   / \   / \
+ *    \_/   \_/
+ */
+// Available styles
+#define UNDERCURL_CURLY 0
+#define UNDERCURL_SPIKY 1
+#define UNDERCURL_CAPPED 2
+// Active style
+#define UNDERCURL_STYLE UNDERCURL_SPIKY

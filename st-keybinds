@@ -1,0 +1,4 @@
+#!/bin/sh
+# Simple script which allows you to read all st keybinds
+
+less /usr/bin/stbindlist

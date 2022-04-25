@@ -16,6 +16,8 @@
 #include <termios.h>
 #include <unistd.h>
 #include <wchar.h>
+#include <X11/keysym.h>
+#include <X11/X.h>
 
 #include "autocomplete.h"
 #include "st.h"
@@ -34,6 +36,7 @@
 #define UTF_SIZ       4
 #define ESC_BUF_SIZ   (128*UTF_SIZ)
 #define ESC_ARG_SIZ   16
+#define CAR_PER_ARG   4
 #define STR_BUF_SIZ   ESC_BUF_SIZ
 #define STR_ARG_SIZ   ESC_ARG_SIZ
 #define HISTSIZE      2000
@@ -149,6 +152,7 @@ typedef struct {
 	int arg[ESC_ARG_SIZ];
 	int narg;              /* nb of args */
 	char mode[2];
+	int carg[ESC_ARG_SIZ][CAR_PER_ARG]; /* colon args */
 } CSIEscape;
 
 /* STR Escape sequence structs */
@@ -170,6 +174,7 @@ static void ttywriteraw(const char *, size_t);
 
 static void csidump(void);
 static void csihandle(void);
+static void readcolonargs(char **, int, int[][CAR_PER_ARG]);
 static void csiparse(void);
 static void csireset(void);
 static int eschandle(uchar);
@@ -211,6 +216,7 @@ static void tdefutf8(char);
 static int32_t tdefcolor(const int *, int *, int);
 static void tdeftran(char);
 static void tstrsequence(uchar);
+static const char *findlastany(const char *, const char**, size_t);
 
 static void drawregion(int, int, int, int);
 
@@ -1238,6 +1244,28 @@ tnewline(int first_col)
 }
 
 void
+readcolonargs(char **p, int cursor, int params[][CAR_PER_ARG])
+{
+	int i = 0;
+	for (; i < CAR_PER_ARG; i++)
+		params[cursor][i] = -1;
+
+	if (**p != ':')
+		return;
+
+	char *np = NULL;
+	i = 0;
+
+	while (**p == ':' && i < CAR_PER_ARG) {
+		while (**p == ':')
+			(*p)++;
+		params[cursor][i] = strtol(*p, &np, 10);
+		*p = np;
+		i++;
+	}
+}
+
+void
 csiparse(void)
 {
 	char *p = csiescseq.buf, *np;
@@ -1259,6 +1287,7 @@ csiparse(void)
 			v = -1;
 		csiescseq.arg[csiescseq.narg++] = v;
 		p = np;
+		readcolonargs(&p, csiescseq.narg-1, csiescseq.carg);
 		if (*p != ';' || csiescseq.narg == ESC_ARG_SIZ)
 			break;
 		p++;
@@ -1478,6 +1507,10 @@ tsetattr(const int *attr, int l)
 				ATTR_STRUCK     );
 			term.c.attr.fg = defaultfg;
 			term.c.attr.bg = defaultbg;
+			term.c.attr.ustyle = -1;
+			term.c.attr.ucolor[0] = -1;
+			term.c.attr.ucolor[1] = -1;
+			term.c.attr.ucolor[2] = -1;
 			break;
 		case 1:
 			term.c.attr.mode |= ATTR_BOLD;
@@ -1489,7 +1522,14 @@ tsetattr(const int *attr, int l)
 			term.c.attr.mode |= ATTR_ITALIC;
 			break;
 		case 4:
-			term.c.attr.mode |= ATTR_UNDERLINE;
+			term.c.attr.ustyle = csiescseq.carg[i][0];
+
+			if (term.c.attr.ustyle != 0)
+				term.c.attr.mode |= ATTR_UNDERLINE;
+			else
+				term.c.attr.mode &= ~ATTR_UNDERLINE;
+
+			term.c.attr.mode ^= ATTR_DIRTYUNDERLINE;
 			break;
 		case 5: /* slow blink */
 			/* FALLTHROUGH */
@@ -1539,6 +1579,18 @@ tsetattr(const int *attr, int l)
 			break;
 		case 49:
 			term.c.attr.bg = defaultbg;
+			break;
+		case 58:
+			term.c.attr.ucolor[0] = csiescseq.carg[i][1];
+			term.c.attr.ucolor[1] = csiescseq.carg[i][2];
+			term.c.attr.ucolor[2] = csiescseq.carg[i][3];
+			term.c.attr.mode ^= ATTR_DIRTYUNDERLINE;
+			break;
+		case 59:
+			term.c.attr.ucolor[0] = -1;
+			term.c.attr.ucolor[1] = -1;
+			term.c.attr.ucolor[2] = -1;
+			term.c.attr.mode ^= ATTR_DIRTYUNDERLINE;
 			break;
 		default:
 			if (BETWEEN(attr[i], 30, 37)) {
@@ -1915,6 +1967,33 @@ csihandle(void)
 			goto unknown;
 		}
 		break;
+	case 't': /* title stack operations */
+		switch (csiescseq.arg[0]) {
+		case 22: /* pust current title on stack */
+			switch (csiescseq.arg[1]) {
+			case 0:
+			case 1:
+			case 2:
+				xpushtitle();
+				break;
+			default:
+				goto unknown;
+			}
+			break;
+		case 23: /* pop last title from stack */
+			switch (csiescseq.arg[1]) {
+			case 0:
+			case 1:
+			case 2:
+				xsettitle(NULL, 1);
+				break;
+			default:
+				goto unknown;
+			}
+			break;
+		default:
+			goto unknown;
+		}
 	}
 }
 
@@ -1999,7 +2078,7 @@ strhandle(void)
 		switch (par) {
 		case 0:
 			if (narg > 1) {
-				xsettitle(strescseq.argp[1]);
+				xsettitle(strescseq.argp[1], 0);
 				xseticontitle(strescseq.argp[1]);
 			}
 			return;
@@ -2009,7 +2088,7 @@ strhandle(void)
 			return;
 		case 2:
 			if (narg > 1)
-			    xsettitle(STRESCARGREST(1));
+			    xsettitle(STRESCARGREST(1), 0);
 			return;
 		case 52:
 			if (narg > 2 && allowwindowops) {
@@ -2085,7 +2164,7 @@ strhandle(void)
 		}
 		break;
 	case 'k': /* old title set compatibility */
-		xsettitle(strescseq.buf);
+		xsettitle(strescseq.buf, 0);
 		return;
 	case 'P': /* DCS -- Device Control String */
 	case '_': /* APC -- Application Program Command */
@@ -2509,6 +2588,7 @@ eschandle(uchar ascii)
 		break;
 	case 'c': /* RIS -- Reset to initial state */
 		treset();
+		xfreetitlestack();
 		resettitle();
 		xloadcols();
 		break;
@@ -2719,6 +2799,9 @@ tresize(int col, int row)
 	int *bp;
 	TCursor c;
 
+	if ( row < term.row  || col < term.col )
+		toggle_winmode(trt_kbdselect(XK_Escape, NULL, 0));
+
 	if (col < 1 || row < 1) {
 		fprintf(stderr,
 		        "tresize: error resizing to %dx%d\n", col, row);
@@ -2806,7 +2889,7 @@ tresize(int col, int row)
 void
 resettitle(void)
 {
-	xsettitle(NULL);
+	xsettitle(NULL, 0);
 }
 
 void
@@ -3069,4 +3152,299 @@ acmpl_begin:
 
 	complen_prev = strlen (completion);
 	ttywrite (completion, complen_prev, 0);
+}
+
+void set_notifmode(int type, KeySym ksym) {
+	static char *lib[] = { " MOVE ", " SEL  "};
+	static Glyph *g, *deb, *fin;
+	static int col, bot;
+
+	if ( ksym == -1 ) {
+		free(g);
+		col = term.col, bot = term.bot;
+		g = xmalloc(col * sizeof(Glyph));
+		memcpy(g, term.line[bot], col * sizeof(Glyph));
+
+	}
+	else if ( ksym == -2 )
+		memcpy(term.line[bot], g, col * sizeof(Glyph));
+
+	if ( type < 2 ) {
+		char *z = lib[type];
+		for (deb = &term.line[bot][col - 6], fin = &term.line[bot][col]; deb < fin; z++, deb++)
+			deb->mode = ATTR_REVERSE,
+				deb->u = *z,
+				deb->fg = defaultfg, deb->bg = defaultbg;
+	}
+	else if ( type < 5 )
+		memcpy(term.line[bot], g, col * sizeof(Glyph));
+	else {
+		for (deb = &term.line[bot][0], fin = &term.line[bot][col]; deb < fin; deb++)
+			deb->mode = ATTR_REVERSE,
+				deb->u = ' ',
+				deb->fg = defaultfg, deb->bg = defaultbg;
+		term.line[bot][0].u = ksym;
+	}
+
+	term.dirty[bot] = 1;
+	drawregion(0, bot, col, bot + 1);
+}
+
+void select_or_drawcursor(int selectsearch_mode, int type) {
+	int done = 0;
+
+	if ( selectsearch_mode & 1 ) {
+		selextend(term.c.x, term.c.y, type, done);
+		xsetsel(getsel());
+	}
+}
+
+void search(int selectsearch_mode, Rune *target, int ptarget, int incr, int type, TCursor *cu) {
+	Rune *r;
+	int i, bound = (term.col * cu->y + cu->x) * (incr > 0) + incr;
+
+	for (i = term.col * term.c.y + term.c.x + incr; i != bound; i += incr) {
+		for (r = target; r - target < ptarget; r++) {
+			if ( *r == term.line[(i + r - target) / term.col][(i + r - target) % term.col].u ) {
+				if ( r - target == ptarget - 1 )     break;
+			} else {
+				r = NULL;
+				break;
+			}
+		}
+		if ( r != NULL )    break;
+	}
+
+	if ( i != bound ) {
+		term.c.y = i / term.col, term.c.x = i % term.col;
+		select_or_drawcursor(selectsearch_mode, type);
+	}
+}
+
+int trt_kbdselect(KeySym ksym, char *buf, int len) {
+	static TCursor cu;
+	static Rune target[64];
+	static int type = 1, ptarget, in_use;
+	static int sens, quant;
+	static char selectsearch_mode;
+	int i, bound, *xy;
+
+
+	if ( selectsearch_mode & 2 ) {
+		if ( ksym == XK_Return ) {
+			selectsearch_mode ^= 2;
+			set_notifmode(selectsearch_mode, -2);
+			if ( ksym == XK_Escape )    ptarget = 0;
+			return 0;
+		}
+		else if ( ksym == XK_BackSpace ) {
+			if ( !ptarget )     return 0;
+			term.line[term.bot][ptarget--].u = ' ';
+		}
+		else if ( len < 1 ) {
+			return 0;
+		}
+		else if ( ptarget == term.col  || ksym == XK_Escape ) {
+			return 0;
+		}
+		else {
+			utf8decode(buf, &target[ptarget++], len);
+			term.line[term.bot][ptarget].u = target[ptarget - 1];
+		}
+
+		if ( ksym != XK_BackSpace )
+			search(selectsearch_mode, &target[0], ptarget, sens, type, &cu);
+
+		term.dirty[term.bot] = 1;
+		drawregion(0, term.bot, term.col, term.bot + 1);
+		return 0;
+	}
+
+	switch ( ksym ) {
+	case -1 :
+		in_use = 1;
+		cu.x = term.c.x, cu.y = term.c.y;
+		set_notifmode(0, ksym);
+		return MODE_KBDSELECT;
+	case XK_s :
+		if ( selectsearch_mode & 1 )
+			selclear();
+		else
+			selstart(term.c.x, term.c.y, 0);
+		set_notifmode(selectsearch_mode ^= 1, ksym);
+		break;
+	case XK_t :
+		selextend(term.c.x, term.c.y, type ^= 3, i = 0);  /* 2 fois */
+		selextend(term.c.x, term.c.y, type, i = 0);
+		break;
+	case XK_slash :
+	case XK_KP_Divide :
+	case XK_question :
+		ksym &= XK_question;                /* Divide to slash */
+		sens = (ksym == XK_slash) ? -1 : 1;
+		ptarget = 0;
+		set_notifmode(15, ksym);
+		selectsearch_mode ^= 2;
+		break;
+	case XK_Escape :
+		if ( !in_use )  break;
+		selclear();
+	case XK_Return :
+		set_notifmode(4, ksym);
+		term.c.x = cu.x, term.c.y = cu.y;
+		select_or_drawcursor(selectsearch_mode = 0, type);
+		in_use = quant = 0;
+		return MODE_KBDSELECT;
+	case XK_n :
+	case XK_N :
+		if ( ptarget )
+			search(selectsearch_mode, &target[0], ptarget, (ksym == XK_n) ? -1 : 1, type, &cu);
+		break;
+	case XK_BackSpace :
+		term.c.x = 0;
+		select_or_drawcursor(selectsearch_mode, type);
+		break;
+	case XK_dollar :
+		term.c.x = term.col - 1;
+		select_or_drawcursor(selectsearch_mode, type);
+		break;
+	case XK_Home :
+		term.c.x = 0, term.c.y = 0;
+		select_or_drawcursor(selectsearch_mode, type);
+		break;
+	case XK_End :
+		term.c.x = cu.x, term.c.y = cu.y;
+		select_or_drawcursor(selectsearch_mode, type);
+		break;
+	case XK_Page_Up :
+	case XK_Page_Down :
+		term.c.y = (ksym == XK_Prior ) ? 0 : cu.y;
+		select_or_drawcursor(selectsearch_mode, type);
+		break;
+	case XK_exclam :
+		term.c.x = term.col >> 1;
+		select_or_drawcursor(selectsearch_mode, type);
+		break;
+	case XK_asterisk :
+	case XK_KP_Multiply :
+		term.c.x = term.col >> 1;
+	case XK_underscore :
+		term.c.y = cu.y >> 1;
+		select_or_drawcursor(selectsearch_mode, type);
+		break;
+	default :
+		if ( ksym >= XK_0 && ksym <= XK_9 ) {               /* 0-9 keyboard */
+			quant = (quant * 10) + (ksym ^ XK_0);
+			return 0;
+		}
+		else if ( ksym >= XK_KP_0 && ksym <= XK_KP_9 ) {    /* 0-9 numpad */
+			quant = (quant * 10) + (ksym ^ XK_KP_0);
+			return 0;
+		}
+		else if ( ksym == XK_k || ksym == XK_h )
+			i = ksym & 1;
+		else if ( ksym == XK_l || ksym == XK_j )
+			i = ((ksym & 6) | 4) >> 1;
+		else if ( (XK_Home & ksym) != XK_Home || (i = (ksym ^ XK_Home) - 1) > 3 )
+			break;
+
+		xy = (i & 1) ? &term.c.y : &term.c.x;
+		sens = (i & 2) ? 1 : -1;
+		bound = (i >> 1 ^ 1) ? 0 : (i ^ 3) ? term.col - 1 : term.bot;
+
+		if ( quant == 0 )
+			quant++;
+
+		if ( *xy == bound && ((sens < 0 && bound == 0) || (sens > 0 && bound > 0)) )
+			break;
+
+		*xy += quant * sens;
+		if ( *xy < 0 || ( bound > 0 && *xy > bound) )
+			*xy = bound;
+
+		select_or_drawcursor(selectsearch_mode, type);
+	}
+	quant = 0;
+	return 0;
+}
+
+const char *
+findlastany(const char *str, const char**find, size_t len)
+{
+	const char *found = NULL;
+	int i = 0;
+
+	for (found = str + strlen(str) - 1; found >= str; --found) {
+		for(i = 0; i < len; i++) {
+			if (strncmp(found, find[i], strlen(find[i])) == 0) {
+				return found;
+			}
+		}
+	}
+
+	return NULL;
+}
+
+/*
+** Select and copy the previous url on screen (do nothing if there's no url).
+**
+** FIXME: doesn't handle urls that span multiple lines; will need to add support
+**        for multiline "getsel()" first
+*/
+void
+copyurl(const Arg *arg) {
+	/* () and [] can appear in urls, but excluding them here will reduce false
+	 * positives when figuring out where a given url ends.
+	 */
+	static const char URLCHARS[] = "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
+		"abcdefghijklmnopqrstuvwxyz"
+		"0123456789-._~:/?#@!$&'*+,;=%";
+
+	static const char* URLSTRINGS[] = {"http://", "https://"};
+
+	int row = 0, /* row of current URL */
+		col = 0, /* column of current URL start */
+		colend = 0, /* column of last occurrence */
+		passes = 0; /* how many rows have been scanned */
+
+	char linestr[term.col + 1];
+	const char *c = NULL,
+		 *match = NULL;
+
+	row = (sel.ob.x >= 0 && sel.nb.y > 0) ? sel.nb.y : term.bot;
+	LIMIT(row, term.top, term.bot);
+
+	colend = (sel.ob.x >= 0 && sel.nb.y > 0) ? sel.nb.x : term.col;
+	LIMIT(colend, 0, term.col);
+
+	/*
+	** Scan from (term.row - 1,term.col - 1) to (0,0) and find
+	** next occurrance of a URL
+	*/
+	for (passes = 0; passes < term.row; passes++) {
+		/* Read in each column of every row until
+		** we hit previous occurrence of URL
+		*/
+		for (col = 0; col < colend; ++col)
+			linestr[col] = term.line[row][col].u < 128 ? term.line[row][col].u : ' ';
+		linestr[col] = '\0';
+
+		if ((match = findlastany(linestr, URLSTRINGS,
+						sizeof(URLSTRINGS)/sizeof(URLSTRINGS[0]))))
+			break;
+
+		if (--row < 0)
+			row = term.row - 1;
+
+		colend = term.col;
+	};
+
+	if (match) {
+		size_t l = strspn(match, URLCHARS);
+		selstart(match - linestr, row, 0);
+		selextend(match - linestr + l - 1, row, SEL_REGULAR, 0);
+		selextend(match - linestr + l - 1, row, SEL_REGULAR, 1);
+		xsetsel(getsel());
+		xclipcopy();
+	}
 }
