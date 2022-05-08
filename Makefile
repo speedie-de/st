@@ -80,7 +80,7 @@ gentoo-libxftfix:
 arch-libxftfix:
 	git clone https://aur.archlinux.org/libxft-bgra
 	cd libxft-bgra
-	makepkg -si
+	makepkg -i
 
 help:
 	@echo install: Installs st. You may need to run this as root.
