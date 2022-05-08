@@ -32,3 +32,10 @@
 ! font
 *.font:                   Terminus:pixelsize=15.5:antialias=true:autohint=true;
 *.font2:                  JoyPixels:pixelsize=12
+*.cols:                   80
+*.rows:                   24
+*.mousefg:                7
+*.mousebg:                0
+*.defaultattr:            11
+*.cwscale:                1.0
+*.chscale:                1.0
