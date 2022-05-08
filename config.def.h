@@ -17,111 +17,38 @@
  *
  * As for fonts, I recommend using Terminus for text and JoyPixels for Emojis
  * You can set all of these in your .Xresources or if you don't have one, by editing the values below. */
-static char *font = "JoyPixels:pixelsize=12:antialias=true:autohint=true";
-static char *font2[] = { "Terminus:style=Mono:pixelsize=15.5:antialias=true:autohint=true" };
-static int borderpx = 2;
 
-/*
- * What program is execed by st depends of these precedence rules:
- * 1: program passed with -e
- * 2: scroll and/or utmp
- * 3: SHELL environment variable
- * 4: value of shell in /etc/passwd
- * 5: value of shell in config.h
- */
-static char *shell = "/bin/sh";
-char *utmp = NULL;
-/* scroll program: to enable use a string like "scroll" */
-char *scroll = NULL;
-char *stty_args = "stty raw pass8 nl -echo -iexten -cstopb 38400";
-
-/* identification sequence returned in DA and DECID */
-char *vtiden = "\033[?6c";
-
-/* Kerning / character bounding-box multipliers */
-static float cwscale = 1.0;
-static float chscale = 1.0;
-/* Character rendering offsets in pixels */
-static short cxoffset = 0;
-static short cyoffset = 0;
-
-/*
- * word delimiter string
- *
- * More advanced example: L" `'\"()[]{}"
- */
-wchar_t *worddelimiters = L" ";
-
-/* selection timeouts (in milliseconds) */
+/* Options
+ * Most of these can be configured through .Xresources.
+ * You only need to change them if you won't be using .Xresources.
+ * See example.Xresources for more information. */
+static char *font                      = "Terminus:style=Mono:pixelsize=15.5:antialias=true:autohint=true";
+static char *font2[]                   = { "JoyPixels:pixelsize=12:antialias=true:autohint=true" };
+static char *shell                     = "/bin/sh";
+static float cwscale                   = 1.0;
+static float chscale                   = 1.0;
+static short cxoffset                  = 0;
+static short cyoffset                  = 0;
+char *utmp                             = NULL;
+char *scroll                           = NULL;
+char *stty_args                        = "stty raw pass8 nl -echo -iexten -cstopb 38400";
+char *vtiden                           = "\033[?6c";
+char *termname                         = "st-256color";
+wchar_t *worddelimiters                = L" ";
 static unsigned int doubleclicktimeout = 300;
 static unsigned int tripleclicktimeout = 600;
-
-/* alt screens */
-int allowaltscreen = 1;
-
-/* allow certain non-interactive (insecure) window operations such as:
-   setting the clipboard text */
-int allowwindowops = 0;
-
-/*
- * draw latency range in ms - from new content/keypress/etc until drawing.
- * within this range, st draws when content stops arriving (idle). mostly it's
- * near minlatency, but it waits longer for slow updates to avoid partial draw.
- * low minlatency will tear/flicker more, as it can "detect" idle too early.
- */
-static double minlatency = 8;
-static double maxlatency = 33;
-
-/*
- * blinking timeout (set to 0 to disable blinking) for the terminal blinking
- * attribute.
- */
-static unsigned int blinktimeout = 800;
-
-/*
- * thickness of underline and bar cursors
- */
-static unsigned int cursorthickness = 2;
-
-/*
- * 1: render most of the lines/blocks characters without using the font for
- *    perfect alignment between cells (U2500 - U259F except dashes/diagonals).
- *    Bold affects lines thickness if boxdraw_bold is not 0. Italic is ignored.
- * 0: disable (render all U25XX glyphs normally from the font).
- */
-const int boxdraw = 0;
-const int boxdraw_bold = 0;
-
-/* braille (U28XX):  1: render as adjacent "pixels",  0: use font */
-const int boxdraw_braille = 0;
-
-/*
- * bell volume. It must be a value between -100 and 100. Use 0 for disabling
- * it
- */
-static int bellvolume = 0;
-
-/* default TERM value */
-char *termname = "st-256color";
-
-/*
- * spaces per tab
- *
- * When you are changing this value, don't forget to adapt the »it« value in
- * the st.info and appropriately install the st.info in the environment where
- * you use this st version.
- *
- *	it#$tabspaces,
- *
- * Secondly make sure your kernel is not expanding tabs. When running `stty
- * -a` »tab0« should appear. You can tell the terminal to not expand tabs by
- *  running following command:
- *
- *	stty tabs
- */
+int allowaltscreen                     = 1;
+int allowwindowops                     = 0;
+static double minlatency               = 8;
+static double maxlatency               = 33;
+static unsigned int blinktimeout       = 800;
+static unsigned int cursorthickness    = 2;
+const int boxdraw                      = 0;
+const int boxdraw_bold                 = 0;
+const int boxdraw_braille              = 0;
+static int borderpx                    = 2;
+static int bellvolume                  = 0;
 unsigned int tabspaces = 8;
-
-/* bg opacity */
 float alpha = 0.70;
 
 /* Terminal colors (16 first used in escape sequence) */
@@ -152,10 +79,6 @@ static const char *colorname[] = {
 	"#1c1c1c", /* default background colour (#212121) */
 };
 
-/*
- * Default colors (colorname index)
- * foreground, background, cursor, reverse cursor
- */
 unsigned int defaultfg = 258;
 unsigned int defaultbg = 232;
 static unsigned int defaultcs = 256;
@@ -163,6 +86,12 @@ static unsigned int defaultrcs = 257;
 
 static unsigned int cursorstyle = 1;
 static Rune stcursor = 0x2603;
+static unsigned int cols = 80;
+static unsigned int rows = 24;
+static unsigned int mousefg = 7;
+static unsigned int mousebg = 0;
+static unsigned int mouseshape = XC_xterm;
+static unsigned int defaultattr = 11;
 
 /*
  * Xresources preferences to load at startup
@@ -197,30 +126,15 @@ ResourcePref resources[] = {
 		{ "bellvolume",   INTEGER, &bellvolume },
 		{ "tabspaces",    INTEGER, &tabspaces },
 		{ "borderpx",     INTEGER, &borderpx },
+		{ "cols",         INTEGER, &cols },
+		{ "rows",         INTEGER, &rows },
+		{ "mousefg",      INTEGER, &mousefg },
+		{ "mousebg",      INTEGER, &mousebg },
+		{ "defaultattr",  INTEGER, &defaultattr },
 		{ "cwscale",      FLOAT,   &cwscale },
 		{ "chscale",      FLOAT,   &chscale },
         { "alpha",        FLOAT,   &alpha },
 };
-
-/*
- * Default columns and rows numbers
- */
-
-static unsigned int cols = 80;
-static unsigned int rows = 24;
-
-/*
- * Default colour and shape of the mouse cursor
- */
-static unsigned int mouseshape = XC_xterm;
-static unsigned int mousefg = 7;
-static unsigned int mousebg = 0;
-
-/*
- * Color used to display font attributes when fontconfig selected a font which
- * doesn't match the ones requested.
- */
-static unsigned int defaultattr = 11;
 
 /*
  * Force mouse select/shortcuts while mask is active (when MODE_MOUSE is set).
