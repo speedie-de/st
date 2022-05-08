@@ -58,6 +58,7 @@ This build of dwm has been patched pretty heavily with the following patches
 - st-csi
 - st-copyurl
 - st-dynamic-cursor-color
+
   
 This build of st has full compatibility with .Xresources and allows defining these options:
 - !! st resources
@@ -94,12 +95,19 @@ This build of st has full compatibility with .Xresources and allows defining the
 - ! font
 - *.font:                   Terminus:pixelsize=15.5:antialias=true:autohint=true;
 - *.font2:                  JoyPixels:pixelsize=12
+- *.cols:                   80
+- *.rows:                   24
+- *.mousefg:                7
+- *.mousebg:                0
+- *.defaultattr:            11
+- *.cwscale:                1.0
+- *.chscale:                1.0
 
-Pywal support is also a thing and will automatically be used. No special scripts like my builds of dwm and dmenu require.
+Pywal support is also a thing and will automatically be used. No special scripts like my build of dmenu requires.
 
 It also supports color emojis as long as libXft is patched, otherwise it will CRASH. It has an emoji picker. To use it, add a keybind to your build of dwm which runs /usr/bin/emojilist (Requires dmenu). It allows copying the output of a command. To use it, add a keybind to your build of dwm which runs /usr/bin/copyout (Requires dmenu) Keep in mind if you're using my build of dwm, these binds are already added.
 
-### Keybinds
+### Keybinds (not complete)
 - CTRL+y      | Copy to the clipboard
 - CTRL+p      | Paste from the clipboard
 - CTRL+=      | Increase font size
@@ -117,4 +125,5 @@ It also supports color emojis as long as libXft is patched, otherwise it will CR
 - I           | Enter Insert mode
 - Esc         | Enter Normal mode
 - Tab         | Autocomplete
+
 
