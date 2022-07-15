@@ -1,9 +1,8 @@
 /* speedie's simple terminal configuration file
  * https://github.com/speedie-de/st
- * Works best with szsh as your shell and my dmenu config.
  *
- * - If you want 'copyout' support, add a keybind to run /usr/bin/copyout to your build of dwm.
- * - If you want an emoji picker, add a keybind to run /usr/bin/emojilist to your build of dwm.
+ * - If you want 'copyout' support, download the script from my GitHub and add a keybind to your WM. 
+ * - If you want an emoji picker, download dboard and add a keybind to your WM.
  * - If you're using my build then the above is already done so you don't need to worry about it.
  *
  * WARNING: This build of st does NOT prevent colored emojis from displaying.
@@ -22,9 +21,10 @@
  * Most of these can be configured through .Xresources.
  * You only need to change them if you won't be using .Xresources.
  * See example.Xresources for more information. */
-static char *font                      = "Terminus:style=Mono:pixelsize=15.5:antialias=true:autohint=true";
+static char *font                      = "DejaVu Sans Mono:pixelsize=12:antialias=true:autohint=true";
 static char *font2[]                   = { "JoyPixels:pixelsize=12:antialias=true:autohint=true" };
 static char *shell                     = "/bin/sh";
+static char *plumb_cmd[]               = {"plumb", "-c", NULL, NULL};
 static float cwscale                   = 1.0;
 static float chscale                   = 1.0;
 static short cxoffset                  = 0;
@@ -33,7 +33,7 @@ char *utmp                             = NULL;
 char *scroll                           = NULL;
 char *stty_args                        = "stty raw pass8 nl -echo -iexten -cstopb 38400";
 char *vtiden                           = "\033[?6c";
-char *termname                         = "st-256color";
+char *termname                         = "xterm-256color";
 wchar_t *worddelimiters                = L" ";
 static unsigned int doubleclicktimeout = 300;
 static unsigned int tripleclicktimeout = 600;
@@ -76,7 +76,7 @@ static const char *colorname[] = {
 	"#cccccc",
 	"#555555",
 	"#c0c5ce", /* default foreground colour (#c0c5ce) */
-	"#1c1c1c", /* default background colour (#212121) */
+	"#696969", /* default background colour (#212121) */
 };
 
 unsigned int defaultfg = 258;
@@ -161,7 +161,7 @@ static MouseShortcut mshortcuts[] = {
 };
 
 #define MODKEY (ControlMask)
-#define TERMMOD (ShiftMask) // |ShiftMask
+#define TERMMOD (ShiftMask)
 
 static Shortcut shortcuts[] = {
 	/* mask                  keysym          function        argument */
@@ -173,7 +173,7 @@ static Shortcut shortcuts[] = {
 	{ ControlMask,           XK_equal,       zoom,           {.f = +1} },
 	{ ControlMask,           XK_minus,       zoom,           {.f = -1} },
 	{ ControlMask,           XK_0,           zoomreset,      {.f = 0} },
-	{ ControlMask,           XK_y,           clipcopy,       {.i = 0} },
+	{ ControlMask,           XK_y,           clipcopy,       {.i = 1} },
 	{ ControlMask,           XK_p,           clippaste,      {.i = 0} },
 	{ TERMMOD,               XK_Escape,      keyboard_select,{.i = 0} },
 	{ TERMMOD,               XK_y,           selpaste,       {.i = 0} },
