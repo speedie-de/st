@@ -3,7 +3,7 @@ Type=Application
 Exec=st
 TryExec=st
 Icon=st
-Terminal=false
+Terminal=true
 Categories=System;TerminalEmulator;
 
 Name=st
