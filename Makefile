@@ -36,7 +36,7 @@ clean:
 
 dist: clean
 	mkdir -p st-spde-$(VERSION)
-	cp -R arg.h autocomplete.h boxdraw.c boxdraw_data.h config.def.h config.mk copyout docs emojilist hb.c hb.h Makefile st.1 st-autocomplete st.c st.h st.info win.h x.c st-keybinds st-spde-$(VERSION)
+	cp -R arg.h autocomplete.h boxdraw.c boxdraw_data.h config.def.h config.mk st.png st.desktop docs hb.c hb.h Makefile st.1 st-autocomplete st.c st.h st.info win.h x.c docs/st-keybinds st-spde-$(VERSION)
 	tar -cf - st-spde-$(VERSION) | gzip > st-spde-$(VERSION).tar.gz
 	rm -rf st-spde-$(VERSION)
 
@@ -44,13 +44,9 @@ install: st
 	touch config.h boxdraw.o hb.o st.o x.o
 	mkdir -p $(DESTDIR)$(PREFIX)/bin
 	cp -f st $(DESTDIR)$(PREFIX)/bin
-	cp -f copyout $(DESTDIR)$(PREFIX)/bin
-	cp -f emojilist $(DESTDIR)$(PREFIX)/bin
 	cp -f docs/bindlist $(DESTDIR)$(PREFIX)/bin/stbindlist
-	cp -f st-keybinds $(DESTDIR)$(PREFIX)/bin
+	cp -f docs/st-keybinds $(DESTDIR)$(PREFIX)/bin
 	chmod +x $(DESTDIR)$(PREFIX)/bin/st-keybinds
-	chmod +x $(DESTDIR)$(PREFIX)/bin/emojilist
-	chmod +x $(DESTDIR)$(PREFIX)/bin/copyout
 	chmod 755 $(DESTDIR)$(PREFIX)/bin/st
 	cp -f st-autocomplete $(DESTDIR)$(PREFIX)/bin
 	chmod 755 $(DESTDIR)$(PREFIX)/bin/st-autocomplete
@@ -60,11 +56,17 @@ install: st
 	rm -f config.h boxdraw.o hb.o st.o x.o
 	tic -sx st.info
 	@echo Please see the README file regarding the terminfo entry of st.
+	mkdir -p $(DESTDIR)$(ICONPREFIX)
+	mkdir -p $(DESTDIR)$(APPPREFIX)
+	cp -f st.desktop $(DESTDIR)$(APPPREFIX)
+	[ -f $(ICONNAME) ] && cp -f $(ICONNAME) $(DESTDIR)$(ICONPREFIX) || :
 
 uninstall:
 	rm -f $(DESTDIR)$(PREFIX)/bin/st
+	rm -f $(DESTDIR)$(APPPREFIX)/st.desktop
 	rm -f $(DESTDIR)$(PREFIX)/bin/st-autocomplete
 	rm -f $(DESTDIR)$(MANPREFIX)/man1/st.1
+	rm -f $(DESTDIR)$(ICONPREFIX)/$(ICONNAME)
 
 libxftfix:
 	git clone https://github.com/uditkarode/libxft-bgra && cd libxft-bgra
