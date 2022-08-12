@@ -30,4 +30,4 @@
 ! alpha
 *.alpha:                  0.9
 ! font
-*.font:                   Terminus:pixelsize=15.5:antialias=true:autohint=true;
+*.font:                   DejaVu Sans Mono:pixelsize=12:antialias=true:autohint=true;

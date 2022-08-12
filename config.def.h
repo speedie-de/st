@@ -49,7 +49,7 @@ const int boxdraw_braille              = 0;
 static int borderpx                    = 2;
 static int bellvolume                  = 0;
 unsigned int tabspaces = 8;
-float alpha = 0.70;
+float alpha = 0.85;
 
 /* Terminal colors (16 first used in escape sequence) */
 static const char *colorname[] = {
